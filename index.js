@@ -1,84 +1,72 @@
-var display = document.getElementById('weather')
-var userQuery
-var weatherURL = "https://api.openweathermap.org/data/2.5/weather"
-var queryString = "?units=imperial&appid=8681e15d1f719fff05e4013753695305&q=" + userQuery
-var fetchURL = weatherURL + queryString
-var errMessage = document.createElement('h2')
+const display = document.getElementById('weather')
+let userQuery
+const weatherURL = "https://api.openweathermap.org/data/2.5/weather"
+let queryString = `?units=imperial&appid=8681e15d1f719fff05e4013753695305&q=${userQuery}`
+let fetchURL = weatherURL + queryString
+const errMessage = document.createElement('h2')
 errMessage.textContent = 'Location not Found'
-var form = document.querySelector('form')
-var br = document.createElement('br')
+const form = document.querySelector('form')
+const br = document.createElement('br')
 
-form.onsubmit = function(e) {
+form.onsubmit = async function(e) {
     e.preventDefault()
     display.innerHTML = ''
-    userQuery = this.search.value.trim()
+    userQuery = form.search.value.trim()
     console.log(userQuery)
     if (!userQuery) return
     form.search.value = ''
-    queryString = "?units=imperial&appid=8681e15d1f719fff05e4013753695305&q=" + userQuery
+    queryString = `?units=imperial&appid=8681e15d1f719fff05e4013753695305&q=${userQuery}`
     fetchURL = weatherURL + queryString
     console.log(fetchURL)
-    fetch(fetchURL)
-    .then(function(res) {
-        if (res.status !== 200){
-            throw new Error('Location not Found')
-        }
-        return res.json()
-    })
-    .then(function(data) {
+    try {
+    const res = await fetch(fetchURL)
+    console.log(res.status)
+        if (res.status !== 200) throw new Error('Location not Found')
+        const data = await res.json()
         console.log(data)
-
-        var h2 = document.createElement('h2')
-        h2.textContent = data.name + ', ' + data.sys.country
-        display.appendChild(h2)
-
-        lat = data.coord.lat
-        long = data.coord.lon
-
-        var a = document.createElement('a')
-        a.setAttribute('href', 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + long)
-        a.setAttribute('target', '_BLANK')
-        a.textContent = 'Click to view map'
-        display.appendChild(a)
-
-        var img = document.createElement('img')
-        img.setAttribute('src', 'https://openweathermap.org/img/wn/' + data.weather[0].icon + '@2x.png')
-        display.appendChild(img)
-
-        var desc = document.createElement('p')
-        desc.textContent = data.weather[0].description
-        desc.style.textTransform = 'capitalize'
-        display.appendChild(desc)
-
-        display.appendChild(br)
-
-        var CurrentTemp = document.createElement('p')
-        CurrentTemp.textContent = 'Current: ' + data.main.temp + '° F'
-        display.appendChild(CurrentTemp)
-
-        var feelsLike = document.createElement('p')
-        feelsLike.textContent = 'Feels like: ' + data.main.feels_like + '° F'
-        display.appendChild(feelsLike)
-
-        display.appendChild(br)
-
-        var dt = data.dt * 1000
-        var date = new Date(dt)
-        var timeString = date.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit'
-        })
-        var update = document.createElement('p')
-        update.textContent = 'Last Updated: ' + timeString
-        display.appendChild(update)
-    })
-    .catch(function(err) {
-        display.appendChild(errMessage)
-    })
+        renderWeather(data)
+}catch(err){
+    display.appendChild(errMessage)
+}
 }
 
-function renderWeather() {
-    var h2 = document.createElement('h2')
-    h2.textContent = data.name + ', ' + data.sys.country
-    display.appendChild(h2)
+const renderWeather = ({
+    name,
+    sys: {
+        country,
+    },
+    coord: {
+        lat,
+        lon
+    },
+    weather: {
+        0: {
+            icon,
+            description
+        }
+    },
+    main: {
+        temp,
+        feels_like
+    },
+    dt
+}) => {
+    console.log('rendering!')
+    display.innerHTML = `<h2>${name}, ${country}</h2>
+    <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}"
+    target="_BLANK">Click to view map</a>
+    <img src="https://openweathermap.org/img/wn/${icon}@2x.png">
+    <p style="text-transform: capitalize;">${description}</p><br>
+    <p>Current: ${temp}</p>
+    <p>Feels like: ${feels_like}</p>
+    <p>Last updated: ${FindDate(dt)}`
+}
+
+const FindDate = time => {
+    time = time * 1000
+    const date = new Date(time)
+    return time = date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit'
+    })
 }
